@@ -1,0 +1,101 @@
+######## R
+source("code/microarray_functions.R")
+ds_1 <- "GSE205119"
+raw_data_1 <- load_data(paste0("/usr/local/storage/data_microarray/raw_data/", ds_1), "/home/f/flor/metadata_all_samples_new.xlsx", sep = if (ds_1 == "GSE72180") "_" else ".")
+data_1 <- normalization(raw_data_1)
+data_1 <- annotate_data(data_1)
+data_1 <- clean_genes(data_1)
+data_1 <- collapse_duplicate_genes(data_1, "GeneName", method="mean")
+
+ds_2 <- "GSE137580"
+raw_data_2 <- load_data(paste0("/usr/local/storage/data_microarray/raw_data/", ds_2), "/home/f/flor/metadata_all_samples_new.xlsx", sep = if (ds_2 == "GSE72180") "_" else ".")
+data_2 <- normalization(raw_data_2)
+data_2 <- annotate_data(data_2)
+data_2 <- clean_genes(data_2)
+data_2 <- collapse_duplicate_genes(data_2, "GeneName", method="mean")
+
+comb_data <- combine_chip_datasets(data_1, data_2)
+save_expression_matrix(comb_data, save.dir = paste0("/usr/local/storage/data_microarray/260927_normalized_miRNA"), save.name = paste0("comb_GSE137580_GSE205119", "_norm_data.tsv"))
+
+contrast_expression <- "hsa_circ_0122319 - WT"
+dea <- run_dea(comb_data, "KO", contrast_str=contrast_expression, save.view=T, save.dir = paste0("/usr/local/storage/data_microarray/260927_dea_miRNA"))
+contrast_expression <- "hsa_circ_0002457 - WT"
+dea <- run_dea(comb_data, "KO", contrast_str=contrast_expression, save.view=T, save.dir = paste0("/usr/local/storage/data_microarray/260927_dea_miRNA"))
+
+
+######### python
+from pathlib import Path
+import pandas as pd
+import numpy as np
+base_path = Path("/usr/local/storage/data_microarray")
+
+base_path_data_E = base_path / "260927_normalized_miRNA"
+base_path_data_D = base_path / "260927_dea_miRNA"
+out_E_view = base_path / "E_view_miRNA"
+out_D_view = base_path / "D_view_miRNA"
+
+tmp = pd.read_csv("/usr/local/storage/data_microarray/260927_normalized_miRNA/comb_GSE137580_GSE205119_norm_data.tsv", sep="\t", index_col=0)
+tmp.index.rename(None, inplace=True)
+tmp = tmp.loc[:, tmp.columns.str.startswith("GSM")]
+tmp.to_csv(out_E_view / "comb_GSE137580_GSE205119_norm_data.tsv", sep="\t")
+
+data_path_padj = out_D_view / "GSE205119_GSE137580_hsa_circ_0122319_-_WT_padj.tsv"
+data_path_logfc = out_D_view / "GSE205119_GSE137580_hsa_circ_0122319_-_WT_logfc.tsv"
+
+dea = pd.read_csv("/usr/local/storage/data_microarray/260927_dea_miRNA/GSE205119_GSE137580_hsa_circ_0122319_-_WT_dea.tsv", sep="\t")
+dea['-log10(p.adj)'] = -np.log10(dea['adj.P.Val'].values)
+dea_pval = pd.DataFrame(
+            dea["-log10(p.adj)"].values, 
+            columns=["-log10(p.adj)"], 
+            index = dea["GeneName"].values
+            )
+dea_logfc = pd.DataFrame(
+            dea["logFC"].values,
+            columns=["logFC"], 
+            index = dea["GeneName"].values
+            )
+dea_pval.to_csv(data_path_padj, sep="\t")
+dea_logfc.to_csv(data_path_logfc, sep="\t")
+
+
+data_path_padj = out_D_view / "GSE205119_GSE137580_hsa_circ_0002457_-_WT_padj.tsv"
+data_path_logfc = out_D_view / "GSE205119_GSE137580_hsa_circ_0002457_-_WT_logfc.tsv"
+
+dea = pd.read_csv("/usr/local/storage/data_microarray/260927_dea_miRNA/GSE205119_GSE137580_hsa_circ_0002457_-_WT_dea.tsv", sep="\t")
+dea['-log10(p.adj)'] = -np.log10(dea['adj.P.Val'].values)
+dea_pval = pd.DataFrame(
+            dea["-log10(p.adj)"].values, 
+            columns=["-log10(p.adj)"], 
+            index = dea["GeneName"].values
+            )
+dea_logfc = pd.DataFrame(
+            dea["logFC"].values,
+            columns=["logFC"], 
+            index = dea["GeneName"].values
+            )
+dea_pval.to_csv(data_path_padj, sep="\t")
+dea_logfc.to_csv(data_path_logfc, sep="\t")
+
+##### command line
+
+python main_concepts.py --mtx "/usr/local/storage/data_microarray/E_view_miRNA/comb_GSE137580_GSE205119_norm_data.tsv" --config /home/f/flor/fuzzy_concept_E_sample_wise.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_norm_data_E_sample
+
+python main_fuzzify.py --mtx "/usr/local/storage/data_microarray/E_view_miRNA/comb_GSE137580_GSE205119_norm_data.tsv" --concept /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_norm_data_E_sample/concepts_detailed.json --config /home/f/flor/fuzzy_results_E_sample_wise.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_res_miRNA/comb_GSE137580_GSE205119_norm_data_E_sample
+
+
+python main_concepts.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0122319_-_WT_logfc.tsv" --config /home/f/flor/fuzzy_concept_D_logfc.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_logfc
+
+ python main_concepts.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0122319_-_WT_padj.tsv" --config /home/f/flor/fuzzy_concept_D_padj.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_padj
+
+python main_fuzzify.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0122319_-_WT_logfc.tsv" --concept /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_logfc/concepts_detailed.json --config /home/f/flor/fuzzy_results_D.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_res_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_logfc
+
+python main_fuzzify.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0122319_-_WT_padj.tsv" --concept /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_padj/concepts_detailed.json --config /home/f/flor/fuzzy_results_D.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_res_miRNA/comb_GSE137580_GSE205119_hsa_circ_0122319_-_WT_D_padj
+
+
+python main_concepts.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0002457_-_WT_logfc.tsv" --config /home/f/flor/fuzzy_concept_D_logfc.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_logfc
+
+ python main_concepts.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0002457_-_WT_padj.tsv" --config /home/f/flor/fuzzy_concept_D_padj.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_padj
+
+python main_fuzzify.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0002457_-_WT_logfc.tsv" --concept /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_logfc/concepts_detailed.json --config /home/f/flor/fuzzy_results_D.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_res_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_logfc
+
+python main_fuzzify.py --mtx "/usr/local/storage/data_microarray/D_view_miRNA/GSE205119_GSE137580_hsa_circ_0002457_-_WT_padj.tsv" --concept /usr/local/storage/data_microarray/fuzzy_concepts_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_padj/concepts_detailed.json --config /home/f/flor/fuzzy_results_D.json --threads 8 --output /usr/local/storage/data_microarray/fuzzy_res_miRNA/comb_GSE137580_GSE205119_hsa_circ_0002457_-_WT_D_padj

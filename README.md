@@ -105,164 +105,252 @@ The files are expected to be executed in the following order:
 
 # Documentation microarray_functions
 
-**Main Functions**
+**Main Functions:**
+
 download_microarray_data(accession, out_dir, force=F)
-•	Accession: Accession number to download
-•	Out_dir: output directory for the download
-•	Force: If true, redownloads the file even when present
+
+- Accession: Accession number to download
+- Out_dir: output directory for the download
+- Force: If true, redownloads the file even when present
+
 Download function for datasets from ArrayExpress and GEO. Checks for “GSE” and “E-MTAB” prefix
+
+
 load_data(data_dir, metadata_file_path, sep=”.”, other.columns=”Detection”)
-•	Data_dir: directory with dataset
-•	Metadata_file_path: Path to metadata file
-•	Sep: separator used for separating names when parsing non-normalized Illumina files
-•	Other.columns: Prefix of other columns to parse for non-normalized Illumina files
+
+- Data_dir: directory with dataset
+- Metadata_file_path: Path to metadata file
+- Sep: separator used for separating names when parsing non-normalized Illumina files
+- Other.columns: Prefix of other columns to parse for non-normalized Illumina files
+
 Returns r object with raw data. Available microarray see Appendix 1.
+
+
 background_correction(raw_data)
-•	Raw_data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
+- Raw_data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
 Applies background correction to microarrays. Illumina microarrays of type Elist/EListRaw  limma::nec; uListRaw  AgiMicroRna::tgsNormalization; Agilent microarrays of type RGList/EListRaw/Elist  limma::backgroundCorrect + limma:: normalizeBetweenArrays; AffyBatch  affy::rma; ExpressionFeatureSet/GeneFeatureSet  oligo::rma
+
+
 normalization(raw_data)
-•	Raw_data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
+- Raw_data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
 Applies normalization to microarrays. Illumina microarrays of type Elist/EListRaw  limma::neqc; uListRaw  already corrected; Agilent microarrays of type RGList/EListRaw/Elist  limma::backgroundCorrect; AffyBatch  affy::rma; ExpressionFeatureSet/GeneFeatureSet  oligo::rma
+
+
 annotate_data(data, install_missing=F)
-•	Data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList
-•	Install_missing: Whether to install missing annotation packages
+
+- Data: R objects of class: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList
+- Install_missing: Whether to install missing annotation packages
+
 Annotates microarray data with the appropriate annotation package. Available microarray see Appendix 1.
+
+
 save_expression_matrix(data, save.dir, save.name)
-•	Data: R object returned by load_data, background_correction, normalization
-•	Save.dir: Directory to save expression values in
-•	Save.name: Name of file
+
+- Data: R object returned by load_data, background_correction, normalization
+- Save.dir: Directory to save expression values in
+- Save.name: Name of file
+
 Saves the expression values of the provided data as .tsv. Rownames are set as column “Symbol” from the gene information of the object; Columnames are set as the “sample” column of the sample level data.
+
+
 clean_genes(data, symbol_col =”Symbol”, remove_controls=T, verbose=T)
-•	Data: R object of class EList, EListRaw, ExpressionSet, ExpressionFeatureSet. The object is assumed to have a column with the gene symbol saved in the respective feature-annotating matrix
-•	Symbol_col: column in feature-annotating matrix with gene symbol
-•	Remove_controls: remove features/genes which are probably controls
-•	Verbose: send updates through the terminal
+
+- Data: R object of class EList, EListRaw, ExpressionSet, ExpressionFeatureSet. The object is assumed to have a column with the gene symbol saved in the respective feature-annotating matrix
+- Symbol_col: column in feature-annotating matrix with gene symbol
+- Remove_controls: remove features/genes which are probably controls
+- Verbose: send updates through the terminal
+
 This function cleans the features/genes of the microarray data of not annotated probes and control probes. Control probes are determined by checking the gene metadata for common registries of control probes, like “controlType” or “status”. Here control probes are determined through string matching. For Affymetrix microarray data the probe names are screened for probes starting with “AFFX-“. For Agilent microarrays the probe names are screened for “DarkCorner”, “SCorner", “NC[0-9]+_”. The control genes are removed if remove_controls is true. Probes with missing gene names are always removed.
+
+
 collapse_duplicate_genes(data, symbol_col = “Symbol”, method, verbose=T)
-•	Data: R object of class EList, EListRaw, ExpressionSet, ExpressionFeatureSet. The object is assumed to have a column with the gene symbol saved in the respective feature-annotating matrix
-•	Symbol_col: column in feature-annotating matrix with gene symbol
-•	Method: one of “mean”, “median”, “max_mean”. Collapses duplicate probes and returns either the mean, median or max_mean of the probes. In case of max_mean the probe with the largest mean across samples is taken.
-•	Verbose: send updates through the terminal
+
+- Data: R object of class EList, EListRaw, ExpressionSet, ExpressionFeatureSet. The object is assumed to have a column with the gene symbol saved in the respective feature-annotating matrix
+- Symbol_col: column in feature-annotating matrix with gene symbol
+- Method: one of “mean”, “median”, “max_mean”. Collapses duplicate probes and returns either the mean, median or max_mean of the probes. In case of max_mean the probe with the largest mean across samples is taken.
+- Verbose: send updates through the terminal
+
 Collapses probes detecting the same gene. Available methods of collapsing the values are mean, median and max_mean
+
+
 combine_chip_datasets(…, dataset_names=NULL)
-•	…: datasets to combine
-•	Dataset_names: vector of dataset names to create a unique dataset identifier for accession
+
+- …: datasets to combine
+- Dataset_names: vector of dataset names to create a unique dataset identifier for accession
+
 Combines datasets with each other. Chips need to be identical to avoid misssense probe name collisions. Cross-Chip microarray comparison is not recommended
+
+
 run_dea(data, group_col, group_levels=NULL, contrast_str=NULL, covariate_cols=NULL, p_adjust_method=”BH”, save.view=F, save.dir=NULL)
-•	Data: processed microarray data; expects one of ExpressionSet, ExpressionFeatureSet, EListRaw, EList, uRNAList
-•	Group_col: column containing the contrast conditions
-•	Group_levels: specify the levels of the group_col. If NULL then the levels are set automatically
-•	Contrast_str: contrast string of form “<cond2>-<cond1>”. Cond1 and cond2 must be in group_col. If contrast_str=NULL and group_col contains exactly two conditions, then these are taken as contrast_str.
-•	P_adjust_method: method for multiple testing correction of DEA. Defaults to Benjamin-Hochberg correction.
-•	Save.view: If true, saves the DEA table
-•	Save.dir: Output directory for the dea. File is saved in the output directory as “<accession_nr>_<contrast_str>.tsv”. contrast_str is adapted to a valid file name string when saving. If save.view=TRUE, then required.
+
+- Data: processed microarray data; expects one of ExpressionSet, ExpressionFeatureSet, EListRaw, EList, uRNAList
+- Group_col: column containing the contrast conditions
+- Group_levels: specify the levels of the group_col. If NULL then the levels are set automatically
+- Contrast_str: contrast string of form “<cond2>-<cond1>”. Cond1 and cond2 must be in group_col. If contrast_str=NULL and group_col contains exactly two conditions, then these are taken as contrast_str.
+- P_adjust_method: method for multiple testing correction of DEA. Defaults to Benjamin-Hochberg correction.
+- Save.view: If true, saves the DEA table
+- Save.dir: Output directory for the dea. File is saved in the output directory as “<accession_nr>_<contrast_str>.tsv”. contrast_str is adapted to a valid file name string when saving. If save.view=TRUE, then required.
+
 Runs DEA on normalized microarray data using limma.
+
+
 run_pca(data, n_top=1000, center=T, scale.=F)
-•	Data: R Object of class ExpressionSet, ExpressionFeatureSet, EList or EListRaw
-•	N_top: number of most highly variable features to use for PCA
-•	Center: center the features
-•	Scale: scale the features by the standard deviation
+
+- Data: R Object of class ExpressionSet, ExpressionFeatureSet, EList or EListRaw
+- N_top: number of most highly variable features to use for PCA
+- Center: center the features
+- Scale: scale the features by the standard deviation
+
 Calculates the PCA representation of the given dataset
 
 
 
 
 **Helper Functions**
+
 read_metadata(metadata_file_path, sheet=1)
-•	Metadata_file_path: Path to excel file containing metadata
-•	Sheet: sheet number of excel file which contains the metadata
+- Metadata_file_path: Path to excel file containing metadata
+- Sheet: sheet number of excel file which contains the metadata
+
 Read in excel file containing metadata.
+
 Assumptions: The unique identifier is saved in the 4th column of the excel.
+
+
 match_metadata_to_files(files, meta)
-•	Files: list of file paths
-•	Meta: metadata dataframe
+- Files: list of file paths
+- Meta: metadata dataframe
+
 Match file names to metadata rows
+
+
 unpack_archives(dataset_dir)
-•	Dataset_dir: directory 
+
+- Dataset_dir: directory 
+
 Unpack downloaded archives (.zip, .tar and .gz files)
+
+
 Unpack_geo_seq_archives(dataset_dir, remove_archives=F, force=F, max_depth=10, quiet=F)
-•	Dataset_dir: directory with files downloaded from GEO
-•	Remove_archives: Delete archives from GEO after download
-•	Force: Overwrites previously unpacked data
-•	Max_depth: maximal depth of iterative unpacking
-•	Quiet: If false, no messages are printed
+
+- Dataset_dir: directory with files downloaded from GEO
+- Remove_archives: Delete archives from GEO after download
+- Force: Overwrites previously unpacked data
+- Max_depth: maximal depth of iterative unpacking
+- Quiet: If false, no messages are printed
+
 Unpack datasets downloaded from GEO. Iteratively checks subdirectories for further compressed datasets. Is sensitive to 10x sequencing data.
+
+
 create_agilent_targets(data_dir)
-•	Data_dir: data directory to save the targets.txt in
+- Data_dir: data directory to save the targets.txt in
+
 Formats the targets.txt files for Agilent microarrays. The file is saved as data_dir / targets.txt
+
+
 make_annotation_df(meta_df, file_paths)
+
+
 make_targets(meta_df, file_paths, 	data_dir, col=”FileName”)
-•	Meta_df: metadata dataframe
-•	File_paths: list of paths to the agilent paths
-•	Data_dir: Data directory of the files
-•	Col: Name of column containing the file paths
+- Meta_df: metadata dataframe
+- File_paths: list of paths to the agilent paths
+- Data_dir: Data directory of the files
+- Col: Name of column containing the file paths
+
 Returns a dataframe with filenames matched to the respective samples
+
+
 Read_chp_files(files,  meta)
-•	Files: list of files to read in
-•	Meta: Metadata for the respective files
+- Files: list of files to read in
+- Meta: Metadata for the respective files
+
 Read-in .chp saved files
+
+
 Get_supplier(data)
-•	Data: R object of one of the following classes: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
+- Data: R object of one of the following classes: AffyBatch, ExpressionSet, ExpressionFeatureSet, EList, EListRaw, RGList, uRNAList
+
 Returns the chip types if saved in the metadata. Assumes that the sample metadata contains “chip”
+
+
 read_ilmn_matrix_safe(file_path, probe_id=NULL, expr=”AVG_signal”, sep=”_”, other.columns=”Detection”)
-•	File_path: path to .ilmn file
-•	Probe_id: Name of column containing the probe id. If NULL, then one of "ID_REF", "PROBE_ID", "ProbeID", "Probe" is taken, if any is present.
-•	Expr: column containing expression values
-•	Sep: separator of sample id and column function
-•	Other.columns: Prefix of other columns to parse
+- File_path: path to .ilmn file
+- Probe_id: Name of column containing the probe id. If NULL, then one of "ID_REF", "PROBE_ID", "ProbeID", "Probe" is taken, if any is present.
+- Expr: column containing expression values
+- Sep: separator of sample id and column function
+- Other.columns: Prefix of other columns to parse
+
 Returns an EListRaw function with expression values in E, gene information in genes, other information in other and sample level information in targets
+
+
 Detection_pval(raw_data)
-•	Raw_data: raw_data returned by load_data
+- Raw_data: raw_data returned by load_data
+
 Determines the name of column containing pvalues for measurements
+
+
 Filter_illumina(x, detection_name=”Detection PValue”)
-•	X: R Object of class EList or ElistRaw containing data from an Illumina chip
-•	Detection_name: name of matrix containing detection p-values.
+- X: R Object of class EList or ElistRaw containing data from an Illumina chip
+- Detection_name: name of matrix containing detection p-values.
+
 Filters Illumina data for eligibly detected probes and removes not properly detected ones.
+
+
 Pca_plot(pca_result, color_by, shape_by=NULL, pc_x=1, pc_y=2, point_size=1.5)
-•	Pca_result: calculated pca from run_pca
-•	Color_by: column of metadata to color the different samples
-•	Shape_by: column of metadata used for shapes
-•	Pca_x: PC component to use for x-axis
-•	Pca_y: PC component to use for y-axis
-•	Point_size: size of points
+- Pca_result: calculated pca from run_pca
+- Color_by: column of metadata to color the different samples
+- Shape_by: column of metadata used for shapes
+- Pca_x: PC component to use for x-axis
+- Pca_y: PC component to use for y-axis
+- Point_size: size of points
+
 Plots the PCA
+
+
 Urna_to_elist(x)
-•	X: dataset of class uRNAList
+- X: dataset of class uRNAList
+
 Converts uRNAList to Elist object
 
- Appendix 1: list of implemented microarray chips
-Affymetrix Human Genome U133 Plus 2.0 Array
-Affymetrix Human Genome U133A 2.0 Array
-Affymetrix HT Human Genome U133A
-Affymetrix HT Mouse Genome 430A Array
-Affymetrix Rat Genome 230A
-Affymetrix Mouse Genome 430 2.0 Array
-Affymetrix Mouse Genome 430A 2.0 Array
-Affymetrix Mouse Transcriptome Array 1.0
-Affymetrix Human Gene 2.1 ST
-Affymetrix Human Gene 2.0 ST
-Affymetrix Human Gene 1.0 ST
-Affymetrix Mouse Gene 1.0 ST Array
-Affymetrix Mouse Exon-Junction Array
-Affymetrix Rat Gene 1.0 ST
-Affymetrix miRNA 3.0
-Affymetrix miRNA 4.0
-Illumina HumanHT-12 v4.0
-Illumina HumanHT-12 v3.0
-Illumina MouseRef-8 v2.0
-Illumina HumanRef-8 v2.0
-Illumina Human v2 MicroRNA
-Illumina Mouse v2 MicroRNA
-Agilent-084555 026652QM_RCUG_HomoSapiens
-Agilent-074809 SurePrint G3 Mouse GE v2
-Agilent-072363 SurePrint G3 Human GE v3
-Agilent-028005 SurePrint G3 Mouse GE
-Agilent miRNA microarray
-Agilent-019159 Rat miRNA
-Agilent-021827 Human miRNA Microarray G4470C
-Agilent-021827 Human miRNA Microarray v2
-Agilent-021827 Human miRNA Microarray v3
-Agilent-035430 mouse miRNA array
-Agilent-050340 Custom Rat miRNA Microarray
-Agilent-070155 Mouse miRNA Microarray
-Agilent-070156 Human miRNA
+**Appendix 1: list of implemented microarray chips**
+
+- Affymetrix Human Genome U133 Plus 2.0 Array
+- Affymetrix Human Genome U133A 2.0 Array
+- Affymetrix HT Human Genome U133A
+- Affymetrix HT Mouse Genome 430A Array
+- Affymetrix Rat Genome 230A
+- Affymetrix Mouse Genome 430 2.0 Array
+- Affymetrix Mouse Genome 430A 2.0 Array
+- Affymetrix Mouse Transcriptome Array 1.0
+- Affymetrix Human Gene 2.1 ST
+- Affymetrix Human Gene 2.0 ST
+- Affymetrix Human Gene 1.0 ST
+- Affymetrix Mouse Gene 1.0 ST Array
+- Affymetrix Mouse Exon-Junction Array
+- Affymetrix Rat Gene 1.0 ST
+- Affymetrix miRNA 3.0
+- Affymetrix miRNA 4.0
+- Illumina HumanHT-12 v4.0
+- Illumina HumanHT-12 v3.0
+- Illumina MouseRef-8 v2.0
+- Illumina HumanRef-8 v2.0
+- Illumina Human v2 MicroRNA
+- Illumina Mouse v2 MicroRNA
+- Agilent-084555 026652QM_RCUG_HomoSapiens
+- Agilent-074809 SurePrint G3 Mouse GE v2
+- Agilent-072363 SurePrint G3 Human GE v3
+- Agilent-028005 SurePrint G3 Mouse GE
+- Agilent miRNA microarray
+- Agilent-019159 Rat miRNA
+- Agilent-021827 Human miRNA Microarray G4470C
+- Agilent-021827 Human miRNA Microarray v2
+- Agilent-021827 Human miRNA Microarray v3
+- Agilent-035430 mouse miRNA array
+- Agilent-050340 Custom Rat miRNA Microarray
+- Agilent-070155 Mouse miRNA Microarray
+- Agilent-070156 Human miRNA
